@@ -23,7 +23,7 @@ func (m *Model) Progress(val float64) {
 
 func (m *Model) Sample(nIntervals int) []float64 {
 	ys := m.mean.Sample(nIntervals)
-	errors := m.vol.Sample(nIntervals)
+	errors, _ := m.vol.Sample(nIntervals)
 
 	for i := 0; i < nIntervals; i++ {
 		ys[i] += errors[i]
