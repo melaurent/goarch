@@ -9,8 +9,14 @@ type ARProcess struct {
 }
 
 func NewARProcess(constant float64, lags []int, coefs []float64) *ARProcess {
+	if len(lags) != len(coefs) {
+		panic("lags and coefficients need to have the same length")
+	}
 	maxLag := 0
 	for _, l := range lags {
+		if l == 0 {
+			panic("invalid lag of 0")
+		}
 		if l > maxLag {
 			maxLag = l
 		}
@@ -31,7 +37,8 @@ func (m *ARProcess) Progress(x float64) float64 {
 	N := len(m.vals)
 	y := m.constant
 	for j, l := range m.lags {
-		y += m.vals[(m.valIdx-1-l)%N] * m.coefs[j]
+		// Should be m.valIdx-1 - (l - 1)
+		y += m.vals[(((m.valIdx-l)%N)+N)%N] * m.coefs[j]
 	}
 	m.vals[m.valIdx] = y
 	m.valIdx = (m.valIdx + 1) % N
@@ -43,17 +50,18 @@ func (m *ARProcess) Sample(nIntervals int) []float64 {
 
 	samples := make([]float64, nIntervals, nIntervals)
 
-	N := cap(m.vals)
+	N := len(m.vals)
 	vals := make([]float64, N, N)
 	for i := 0; i < len(m.vals); i++ {
-		vals[N-i-1] = m.vals[(m.valIdx-i-1)%N]
+		vals[i] = m.vals[(m.valIdx+i)%N]
 	}
 	valIdx := 0
 
-	y := m.constant
 	for i := 0; i < nIntervals; i++ {
+		y := m.constant
 		for j, l := range m.lags {
-			y += vals[(valIdx-1-l)%N] * m.coefs[j]
+			// Should be m.valIdx-1 - (l - 1)
+			y += vals[(((valIdx-l)%N)+N)%N] * m.coefs[j]
 		}
 
 		vals[valIdx] = y
